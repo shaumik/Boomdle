@@ -23,8 +23,36 @@ const Explosions = (() => {
   resize();
 
   const GRAVITY = 0.28;
+  // Hard ceiling on live particles. Past this, new spawns are dropped so a
+  // win (or rapid guesses) can never flood the frame and stall the browser.
+  const MAX_PARTICLES = 460;
   const rand = (min, max) => min + Math.random() * (max - min);
   const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+  // Pre-rendered glow sprites, one per color. A radial gradient baked into a
+  // small offscreen canvas is drawn with drawImage under "lighter" blending —
+  // this gives the same soft glow as ctx.shadowBlur at a tiny fraction of the
+  // cost (shadowBlur re-blurs every particle every frame and is the main
+  // cause of lag once there are a few hundred on screen).
+  const spriteCache = new Map();
+  function sprite(color) {
+    let c = spriteCache.get(color);
+    if (c) return c;
+    const S = 32;
+    c = document.createElement("canvas");
+    c.width = c.height = S;
+    const g = c.getContext("2d");
+    const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    grd.addColorStop(0, color);
+    grd.addColorStop(0.3, color);
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grd;
+    g.beginPath();
+    g.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2);
+    g.fill();
+    spriteCache.set(color, c);
+    return c;
+  }
 
   // Warm "fire" palette plus a few bright sparks.
   const FIRE = ["#fff3b0", "#ffd23f", "#ff8c00", "#ff5a1f", "#ff2d00", "#c81d11"];
@@ -41,7 +69,12 @@ const Explosions = (() => {
       life = 60,
     } = opts;
 
-    for (let i = 0; i < count; i++) {
+    // Drop the spawn (partially or fully) if we're at the particle ceiling.
+    const room = MAX_PARTICLES - particles.length;
+    if (room <= 0) return;
+    const n = Math.min(count, room);
+
+    for (let i = 0; i < n; i++) {
       const a = angle + rand(-spread / 2, spread / 2);
       const v = rand(speed * 0.35, speed);
       particles.push({
@@ -50,11 +83,10 @@ const Explosions = (() => {
         vx: Math.cos(a) * v,
         vy: Math.sin(a) * v - rand(0, 2),
         r: rand(size * 0.5, size),
-        color: pick(colors),
+        spr: sprite(pick(colors)),
         life: rand(life * 0.6, life),
         maxLife: life,
         gravity: opts.gravity ?? GRAVITY,
-        glow: opts.glow ?? true,
       });
     }
   }
@@ -100,8 +132,9 @@ const Explosions = (() => {
       ctx.restore();
     }
 
-    // Particles.
+    // Particles. Additive blending + a cached glow sprite per color.
     ctx.globalCompositeOperation = "lighter";
+    const h = window.innerHeight;
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.vx *= 0.985;
@@ -110,27 +143,19 @@ const Explosions = (() => {
       p.y += p.vy;
       p.life--;
 
-      if (p.life <= 0 || p.y > window.innerHeight + 40) {
+      if (p.life <= 0 || p.y > h + 40) {
         particles.splice(i, 1);
         continue;
       }
 
       const t = p.life / p.maxLife;
-      ctx.globalAlpha = Math.max(0, t);
-      if (p.glow) {
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = p.color;
-      } else {
-        ctx.shadowBlur = 0;
-      }
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * (0.4 + t * 0.6), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = t < 0 ? 0 : t;
+      // Sprite covers ~3x the particle radius so its soft edge reads as glow.
+      const d = p.r * 3 * (0.5 + t * 0.5);
+      ctx.drawImage(p.spr, p.x - d / 2, p.y - d / 2, d, d);
     }
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
 
     if (particles.length || shockwaves.length) {
       requestAnimationFrame(loop);
@@ -171,15 +196,14 @@ const Explosions = (() => {
     const h = window.innerHeight;
     const origins = [
       [w * 0.5, h * 0.4],
-      [w * 0.25, h * 0.5],
-      [w * 0.75, h * 0.5],
-      [w * 0.4, h * 0.3],
-      [w * 0.6, h * 0.6],
+      [w * 0.28, h * 0.5],
+      [w * 0.72, h * 0.5],
+      [w * 0.5, h * 0.62],
     ];
     origins.forEach(([x, y], i) => {
       setTimeout(() => {
         spawnParticles(x, y, {
-          count: 60,
+          count: 42,
           speed: 11,
           size: 5,
           colors: [...FIRE, "#4caf50", "#42a5f5", "#ab47bc", "#fff"],
@@ -187,7 +211,7 @@ const Explosions = (() => {
         });
         spawnShockwave(x, y, { max: 160, speed: 8, width: 6 });
         ensureLoop();
-      }, i * 140);
+      }, i * 150);
     });
   }
 

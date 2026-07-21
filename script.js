@@ -12,8 +12,6 @@
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
   const resetBtn = document.getElementById("reset");
-  const comboFill = document.getElementById("comboFill");
-  const comboFlash = document.querySelector(".combo-flash");
 
   let answer = "";
   let row = 0;
@@ -23,8 +21,6 @@
   let keyEls = {}; // letter -> key element
   let locked = false; // block input during animations
   let over = false;
-  let combo = 0; // running chain of hits (correct/present) this game
-  let bestCombo = 0;
 
   // ---------- Persistent stats (localStorage) ----------
   const STATS_KEY = "boomdle.stats";
@@ -76,36 +72,10 @@
     grid = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
     locked = false;
     over = false;
-    combo = 0;
-    bestCombo = 0;
-    setCombo(0);
     setMessage("");
     resetBtn.hidden = true;
     buildBoard();
     buildKeyboard();
-  }
-
-  // ---------- Combo meter ----------
-  // combo grows on every correct/present tile; a miss resets it.
-  // The meter caps its fill at 10 hits; each new peak flashes a label.
-  function bumpCombo() {
-    combo++;
-    bestCombo = Math.max(bestCombo, combo);
-    setCombo(combo);
-    if (combo >= 3) flashCombo(`COMBO x${combo}! 🔥`);
-  }
-  function breakCombo() {
-    combo = 0;
-    setCombo(0);
-  }
-  function setCombo(n) {
-    comboFill.style.width = Math.min(100, n * 10) + "%";
-  }
-  function flashCombo(text) {
-    comboFlash.textContent = text;
-    comboFlash.classList.remove("pop");
-    void comboFlash.offsetWidth;
-    comboFlash.classList.add("pop");
   }
 
   function buildBoard() {
@@ -239,20 +209,10 @@
         setTimeout(() => {
           t.classList.add(states[i]);
           updateKey(guess[i], states[i]);
-
-          // Combo: correct/present tiles extend the chain, a gray breaks it.
-          if (states[i] === "absent") {
-            breakCombo();
-          } else {
-            bumpCombo();
-          }
-          // Bigger combo => bigger, faster, more particles.
-          const comboBoost = 1 + Math.min(combo, 10) * 0.12;
+          // Detonate this tile as it locks in, themed to its state.
           Explosions.boomAt(t, {
-            count: Math.round(
-              (states[i] === "correct" ? 34 : 20) * comboBoost
-            ),
-            speed: (states[i] === "correct" ? 8 : 5) * comboBoost,
+            count: states[i] === "correct" ? 26 : 16,
+            speed: states[i] === "correct" ? 8 : 5,
             colors: TILE_COLORS[states[i]],
           });
           detonateTile(t, states[i]);
@@ -295,14 +255,11 @@
       "🎉 Explosive victory!",
       "🔥 Nailed it!",
     ];
-    let msg = messages[row % messages.length];
-    if (bestCombo >= 5) msg += ` (best combo x${bestCombo})`;
-    setMessage(msg);
+    setMessage(messages[row % messages.length]);
     Explosions.megaBoom();
     shakeScreen(true);
     // Roll a victory detonation across the winning row.
     Explosions.detonateRow(tiles[row], () => "correct");
-    setTimeout(() => Explosions.megaBoom(), 700);
     showReset();
     setTimeout(() => openStats(guessCount), 1600);
   }

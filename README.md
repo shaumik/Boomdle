@@ -59,6 +59,21 @@ Built to feel fluid, snappy, and hard to put down:
 - **🌙 / ☀️ theme** and **📱 responsive** layout, both remembered between
   sessions.
 
+## Word packs
+
+Pick a pack from the chips under the HUD (remembered between sessions):
+
+| Pack | Words | What's in it |
+| --- | --- | --- |
+| 🌎 All Words | ~840 | Everything below, combined |
+| 📖 Classic | ~770 | Common everyday 5-letter words |
+| 😎 Gen Z | ~40 | Slang — `based`, `vibes`, `sigma`, `gyatt`, `slaps`… |
+| 🌶️ Vulgar 🔞 | ~38 | Rude/NSFW words — a bleep-word mode |
+
+Any real word from any pack is always accepted as a *guess*; only the hidden
+answer is drawn from the selected pack. Word lists live in `words.js` as
+`CATEGORIES`, so adding a new pack is a one-object change.
+
 ## Run it
 
 It's pure static HTML/CSS/JS — no build step, no dependencies.

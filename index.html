@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boomdle — Wordle with Explosions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Full-screen explosion / particle canvas sits above everything -->
+  <canvas id="fx"></canvas>
+
+  <header class="topbar">
+    <h1 class="logo">💥 BOOMDLE 💥</h1>
+    <p class="tagline">Wordle, but everything explodes.</p>
+  </header>
+
+  <main>
+    <div id="board" class="board" aria-label="game board"></div>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <div id="keyboard" class="keyboard" aria-label="keyboard"></div>
+
+    <button id="reset" class="reset-btn" hidden>💣 New Game</button>
+  </main>
+
+  <footer class="footer">
+    <span>Guess the 5-letter word in 6 tries.</span>
+  </footer>
+
+  <script src="words.js"></script>
+  <script src="explosions.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

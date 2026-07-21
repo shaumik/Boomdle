@@ -48,6 +48,11 @@
   const STATS_KEY = "boomdle.stats";
   const THEME_KEY = "boomdle.theme";
   const SOUND_KEY = "boomdle.sound";
+  const CAT_KEY = "boomdle.category";
+
+  // Selected word pack (falls back to "all" if a saved key no longer exists).
+  let category = localStorage.getItem(CAT_KEY) || "all";
+  if (!CATEGORIES[category]) category = "all";
 
   function loadStats() {
     try {
@@ -109,7 +114,8 @@
 
   // ---------- New game ----------
   function newGame() {
-    answer = ANSWERS[(Math.random() * ANSWERS.length) | 0];
+    const pool = (CATEGORIES[category] || CATEGORIES.all).words;
+    answer = pool[(Math.random() * pool.length) | 0];
     row = 0;
     col = 0;
     grid = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
@@ -612,5 +618,37 @@
   window.addEventListener("pointerdown", () => Sound.ensure(), { once: true });
   window.addEventListener("keydown", () => Sound.ensure(), { once: true });
 
+  // ---------- Pack picker ----------
+  const catChips = document.getElementById("catChips");
+  // Show packs in a friendly order.
+  const CAT_ORDER = ["all", "common", "genz", "vulgar"];
+
+  function buildCatChips() {
+    catChips.innerHTML = "";
+    for (const key of CAT_ORDER) {
+      const c = CATEGORIES[key];
+      if (!c) continue;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "cat-chip" + (key === category ? " active" : "");
+      chip.textContent = `${c.emoji} ${c.label}`;
+      chip.title = `${c.words.length} words`;
+      chip.setAttribute("aria-pressed", key === category ? "true" : "false");
+      chip.addEventListener("click", () => setCategory(key));
+      catChips.appendChild(chip);
+    }
+  }
+
+  function setCategory(key) {
+    if (!CATEGORIES[key] || key === category) return;
+    category = key;
+    try {
+      localStorage.setItem(CAT_KEY, key);
+    } catch (_) {}
+    buildCatChips();
+    newGame();
+  }
+
+  buildCatChips();
   newGame();
 })();

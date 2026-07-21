@@ -188,11 +188,7 @@
     pressKey(k);
 
     if (k === "Enter") {
-      if (animating) {
-        pendingEnter = true; // fire as soon as the current reveal finishes
-      } else {
-        submitGuess();
-      }
+      trySubmit();
     } else if (k === "Back" || k === "Backspace") {
       deleteLetter();
     } else if (/^[a-z]$/i.test(k)) {
@@ -225,6 +221,20 @@
 
     col++;
     setCursor();
+
+    // Auto-submit the moment the row is full — no Enter needed. During a
+    // reveal this buffers and fires when it finishes (type-ahead intact); an
+    // invalid word just wobbles so the player can backspace and fix it.
+    if (col === COLS) trySubmit();
+  }
+
+  // Submit now, or queue it if a previous row is still revealing.
+  function trySubmit() {
+    if (animating) {
+      pendingEnter = true;
+    } else {
+      submitGuess();
+    }
   }
 
   function deleteLetter() {

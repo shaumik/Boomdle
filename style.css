@@ -1,0 +1,468 @@
+:root {
+  --bg: #0e0f16;
+  --bg-2: #16182400;
+  --tile: #2a2d3a;
+  --tile-border: #3a3f52;
+  --absent: #3a3f52;
+  --present: #c9a227;
+  --correct: #4caf50;
+  --text: #f5f5f7;
+  --accent: #ff6a3d;
+  --key: #4a4f66;
+}
+
+/* Light theme overrides (toggled via data-theme="light" on <html>). */
+:root[data-theme="light"] {
+  --bg: #f4f5fb;
+  --tile: #ffffff;
+  --tile-border: #cfd3e0;
+  --absent: #9aa0b4;
+  --present: #d0a90f;
+  --correct: #4caf50;
+  --text: #1a1c25;
+  --key: #d6d9e6;
+}
+:root[data-theme="light"] body {
+  background: radial-gradient(circle at 50% -10%, #ffe3d0 0%, var(--bg) 55%);
+}
+:root[data-theme="light"] .tile.present {
+  color: #1a1a1a;
+}
+:root[data-theme="light"] .key.absent {
+  background: #b9bccb;
+  color: #6a6f88;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at 50% -10%, #241a2e 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial,
+    sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* The FX canvas floats on top of the whole page but ignores clicks. */
+#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Screen-shake wrapper applied to <body> via class. */
+body.shake {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+body.shake-big {
+  animation: shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(4px, -2px, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-8px, 2px, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(8px, -2px, 0);
+  }
+}
+
+.topbar {
+  text-align: center;
+  margin-top: 18px;
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+.topbar-actions {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  display: flex;
+  gap: 8px;
+}
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.2s ease;
+}
+.icon-btn:active {
+  transform: scale(0.9);
+}
+
+.logo {
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
+  margin: 0;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  text-shadow: 0 0 18px rgba(255, 106, 61, 0.6);
+}
+.tagline {
+  margin: 4px 0 0;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+}
+
+/* ---------- Board ---------- */
+.board {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.tile {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid var(--tile-border);
+  background: var(--tile);
+  border-radius: 6px;
+  transition: transform 0.08s ease;
+}
+.tile.filled {
+  border-color: #6a6f88;
+  animation: pop 0.12s ease;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Flip reveal */
+.tile.reveal {
+  animation: flip 0.55s ease forwards;
+}
+@keyframes flip {
+  0% {
+    transform: rotateX(0);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+
+.tile.absent {
+  background: var(--absent);
+  border-color: var(--absent);
+}
+.tile.present {
+  background: var(--present);
+  border-color: var(--present);
+  color: #1a1a1a;
+}
+.tile.correct {
+  background: var(--correct);
+  border-color: var(--correct);
+  box-shadow: 0 0 22px rgba(76, 175, 80, 0.7);
+}
+
+/* A tile that just "detonated" */
+.tile.boom {
+  animation: boomPulse 0.4s ease;
+}
+@keyframes boomPulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.35);
+    filter: brightness(2.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.tile.invalid {
+  animation: nope 0.4s ease;
+}
+@keyframes nope {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+/* ---------- Message ---------- */
+.message {
+  min-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* ---------- Keyboard ---------- */
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 500px;
+}
+.krow {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.key {
+  min-width: 30px;
+  height: 52px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--key);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex: 1;
+  transition: transform 0.05s ease, background 0.2s ease;
+}
+.key:active {
+  transform: translateY(2px) scale(0.96);
+}
+.key.wide {
+  flex: 1.6;
+  font-size: 0.75rem;
+}
+.key.absent {
+  background: #23252f;
+  color: #6a6f88;
+}
+.key.present {
+  background: var(--present);
+  color: #1a1a1a;
+}
+.key.correct {
+  background: var(--correct);
+}
+
+.reset-btn {
+  margin-top: 4px;
+  padding: 12px 22px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 106, 61, 0.5);
+  transition: transform 0.08s ease;
+}
+.reset-btn:active {
+  transform: scale(0.95);
+}
+
+/* ---------- Stats modal ---------- */
+.modal[hidden] {
+  display: none;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fade 0.2s ease;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.modal-card {
+  position: relative;
+  width: min(92vw, 380px);
+  background: #1b1e2b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: rise 0.25s ease;
+}
+:root[data-theme="light"] .modal-card {
+  background: #fff;
+  color: #1a1c25;
+}
+@keyframes rise {
+  from {
+    transform: translateY(16px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.modal-title {
+  margin: 0 0 16px;
+  text-align: center;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.stat b {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+.stat span {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  text-align: center;
+}
+.dist-title {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+.dist {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 18px;
+}
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.dist-row .n {
+  width: 12px;
+  opacity: 0.8;
+}
+.dist-bar {
+  background: var(--absent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  min-width: 22px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: width 0.4s ease;
+}
+.dist-bar.hot {
+  background: var(--correct);
+  box-shadow: 0 0 14px rgba(76, 175, 80, 0.6);
+}
+.modal-card .reset-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.footer {
+  padding: 12px;
+  opacity: 0.5;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 420px) {
+  .tile {
+    width: 48px;
+    height: 48px;
+    font-size: 1.6rem;
+  }
+  .key {
+    height: 46px;
+    min-width: 24px;
+    padding: 0 6px;
+  }
+}

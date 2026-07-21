@@ -12,6 +12,8 @@
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
   const resetBtn = document.getElementById("reset");
+  const comboFill = document.getElementById("comboFill");
+  const comboFlash = document.querySelector(".combo-flash");
 
   let answer = "";
   let row = 0;
@@ -21,6 +23,39 @@
   let keyEls = {}; // letter -> key element
   let locked = false; // block input during animations
   let over = false;
+  let combo = 0; // running chain of hits (correct/present) this game
+  let bestCombo = 0;
+
+  // ---------- Persistent stats (localStorage) ----------
+  const STATS_KEY = "boomdle.stats";
+  const THEME_KEY = "boomdle.theme";
+
+  function loadStats() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STATS_KEY));
+      if (s && s.dist) return s;
+    } catch (_) {}
+    return { played: 0, wins: 0, streak: 0, maxStreak: 0, dist: [0, 0, 0, 0, 0, 0] };
+  }
+  function saveStats(s) {
+    try {
+      localStorage.setItem(STATS_KEY, JSON.stringify(s));
+    } catch (_) {}
+  }
+  let stats = loadStats();
+
+  function recordResult(won, guessCount) {
+    stats.played++;
+    if (won) {
+      stats.wins++;
+      stats.streak++;
+      stats.maxStreak = Math.max(stats.maxStreak, stats.streak);
+      stats.dist[guessCount - 1]++;
+    } else {
+      stats.streak = 0;
+    }
+    saveStats(stats);
+  }
 
   const TILE_COLORS = {
     correct: ["#e8f5e9", "#a5d6a7", "#4caf50", "#2e7d32"],
@@ -41,10 +76,36 @@
     grid = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
     locked = false;
     over = false;
+    combo = 0;
+    bestCombo = 0;
+    setCombo(0);
     setMessage("");
     resetBtn.hidden = true;
     buildBoard();
     buildKeyboard();
+  }
+
+  // ---------- Combo meter ----------
+  // combo grows on every correct/present tile; a miss resets it.
+  // The meter caps its fill at 10 hits; each new peak flashes a label.
+  function bumpCombo() {
+    combo++;
+    bestCombo = Math.max(bestCombo, combo);
+    setCombo(combo);
+    if (combo >= 3) flashCombo(`COMBO x${combo}! 🔥`);
+  }
+  function breakCombo() {
+    combo = 0;
+    setCombo(0);
+  }
+  function setCombo(n) {
+    comboFill.style.width = Math.min(100, n * 10) + "%";
+  }
+  function flashCombo(text) {
+    comboFlash.textContent = text;
+    comboFlash.classList.remove("pop");
+    void comboFlash.offsetWidth;
+    comboFlash.classList.add("pop");
   }
 
   function buildBoard() {
@@ -178,10 +239,20 @@
         setTimeout(() => {
           t.classList.add(states[i]);
           updateKey(guess[i], states[i]);
-          // Detonate this tile as it locks in, themed to its state.
+
+          // Combo: correct/present tiles extend the chain, a gray breaks it.
+          if (states[i] === "absent") {
+            breakCombo();
+          } else {
+            bumpCombo();
+          }
+          // Bigger combo => bigger, faster, more particles.
+          const comboBoost = 1 + Math.min(combo, 10) * 0.12;
           Explosions.boomAt(t, {
-            count: states[i] === "correct" ? 34 : 20,
-            speed: states[i] === "correct" ? 8 : 5,
+            count: Math.round(
+              (states[i] === "correct" ? 34 : 20) * comboBoost
+            ),
+            speed: (states[i] === "correct" ? 8 : 5) * comboBoost,
             colors: TILE_COLORS[states[i]],
           });
           detonateTile(t, states[i]);
@@ -217,24 +288,31 @@
   }
 
   function win() {
+    const guessCount = row + 1;
+    recordResult(true, guessCount);
     const messages = [
       "💥 BOOM! You got it!",
       "🎉 Explosive victory!",
       "🔥 Nailed it!",
     ];
-    setMessage(messages[row % messages.length]);
+    let msg = messages[row % messages.length];
+    if (bestCombo >= 5) msg += ` (best combo x${bestCombo})`;
+    setMessage(msg);
     Explosions.megaBoom();
     shakeScreen(true);
     // Roll a victory detonation across the winning row.
     Explosions.detonateRow(tiles[row], () => "correct");
     setTimeout(() => Explosions.megaBoom(), 700);
     showReset();
+    setTimeout(() => openStats(guessCount), 1600);
   }
 
   function lose() {
+    recordResult(false);
     setMessage(`💀 The word was "${answer.toUpperCase()}"`);
     shakeScreen(true);
     showReset();
+    setTimeout(() => openStats(-1), 1200);
   }
 
   function showReset() {
@@ -283,6 +361,75 @@
   });
 
   resetBtn.addEventListener("click", newGame);
+
+  // ---------- Stats modal ----------
+  const statsModal = document.getElementById("statsModal");
+  const distEl = document.getElementById("dist");
+
+  function renderStats(highlight) {
+    const winPct = stats.played
+      ? Math.round((stats.wins / stats.played) * 100)
+      : 0;
+    document.getElementById("stPlayed").textContent = stats.played;
+    document.getElementById("stWin").textContent = winPct;
+    document.getElementById("stStreak").textContent = stats.streak;
+    document.getElementById("stMax").textContent = stats.maxStreak;
+
+    const max = Math.max(1, ...stats.dist);
+    distEl.innerHTML = "";
+    stats.dist.forEach((count, i) => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "dist-row";
+      const bar = document.createElement("div");
+      bar.className = "dist-bar" + (i + 1 === highlight ? " hot" : "");
+      bar.style.width = 10 + (count / max) * 90 + "%";
+      bar.textContent = count;
+      rowEl.innerHTML = `<span class="n">${i + 1}</span>`;
+      rowEl.appendChild(bar);
+      distEl.appendChild(rowEl);
+    });
+  }
+
+  function openStats(highlight) {
+    renderStats(highlight);
+    statsModal.hidden = false;
+  }
+  function closeStats() {
+    statsModal.hidden = true;
+  }
+
+  document.getElementById("statsBtn").addEventListener("click", () => openStats(0));
+  document.getElementById("statsClose").addEventListener("click", closeStats);
+  document.getElementById("statsPlay").addEventListener("click", () => {
+    closeStats();
+    newGame();
+  });
+  statsModal.addEventListener("click", (e) => {
+    if (e.target === statsModal) closeStats();
+  });
+
+  // ---------- Theme toggle ----------
+  const themeBtn = document.getElementById("themeBtn");
+  function applyTheme(theme) {
+    if (theme === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+      themeBtn.textContent = "☀️";
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      themeBtn.textContent = "🌙";
+    }
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+  themeBtn.addEventListener("click", () => {
+    const next =
+      document.documentElement.getAttribute("data-theme") === "light"
+        ? "dark"
+        : "light";
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch (_) {}
+    applyTheme(next);
+  });
 
   newGame();
 })();

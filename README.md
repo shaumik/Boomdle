@@ -29,6 +29,18 @@ to submit, **⌫** to delete.
 All effects are drawn on a single full-screen `<canvas>` particle engine
 (`explosions.js`) with additive blending for that glowy-fire look.
 
+## Dopamine features
+
+- **🔥 Combo streak system** — chained correct/present tiles fill a combo
+  meter and flash `COMBO x5! 🔥`. Higher combos = bigger, faster explosions.
+  A gray tile breaks the chain.
+- **📊 Game statistics** — games played, win %, current & max streak, and a
+  guess-distribution chart, all saved in `localStorage` and shown after every
+  game (or via the 📊 button).
+- **🌙 Dark / ☀️ light mode** — toggle in the top-right, remembered between
+  sessions.
+- **📱 Mobile-friendly** — responsive board and keyboard scale down on phones.
+
 ## Run it
 
 It's pure static HTML/CSS/JS — no build step, no dependencies.

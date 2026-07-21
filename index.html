@@ -12,9 +12,19 @@
   <canvas id="fx"></canvas>
 
   <header class="topbar">
+    <div class="topbar-actions">
+      <button id="statsBtn" class="icon-btn" title="Stats" aria-label="Stats">📊</button>
+      <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">🌙</button>
+    </div>
     <h1 class="logo">💥 BOOMDLE 💥</h1>
     <p class="tagline">Wordle, but everything explodes.</p>
   </header>
+
+  <!-- Combo meter: fills as you chain hits, flashes on big combos. -->
+  <div id="combo" class="combo" aria-hidden="true">
+    <div class="combo-flash"></div>
+    <div class="combo-bar"><span id="comboFill" class="combo-fill"></span></div>
+  </div>
 
   <main>
     <div id="board" class="board" aria-label="game board"></div>
@@ -25,6 +35,23 @@
 
     <button id="reset" class="reset-btn" hidden>💣 New Game</button>
   </main>
+
+  <!-- Stats modal -->
+  <div id="statsModal" class="modal" hidden>
+    <div class="modal-card">
+      <button id="statsClose" class="modal-close" aria-label="Close">✕</button>
+      <h2 class="modal-title">📊 Statistics</h2>
+      <div class="stat-grid">
+        <div class="stat"><b id="stPlayed">0</b><span>Played</span></div>
+        <div class="stat"><b id="stWin">0</b><span>Win %</span></div>
+        <div class="stat"><b id="stStreak">0</b><span>🔥 Streak</span></div>
+        <div class="stat"><b id="stMax">0</b><span>Max Streak</span></div>
+      </div>
+      <h3 class="dist-title">Guess Distribution</h3>
+      <div id="dist" class="dist"></div>
+      <button id="statsPlay" class="reset-btn">💣 New Game</button>
+    </div>
+  </div>
 
   <footer class="footer">
     <span>Guess the 5-letter word in 6 tries.</span>

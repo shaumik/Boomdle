@@ -29,14 +29,35 @@ to submit, **⌫** to delete.
 All effects are drawn on a single full-screen `<canvas>` particle engine
 (`explosions.js`) with additive blending for that glowy-fire look.
 
-## Dopamine features
+## Game feel
 
-- **📊 Game statistics** — games played, win %, current & max streak, and a
-  guess-distribution chart, all saved in `localStorage` and shown after every
-  game (or via the 📊 button).
-- **🌙 Dark / ☀️ light mode** — toggle in the top-right, remembered between
+Built to feel fluid, snappy, and hard to put down:
+
+- **Type-ahead** — reveals never block you. Because scoring is synchronous,
+  the next row goes live the instant you submit, so you can keep typing while
+  the previous row is still flipping. A queued Enter fires when it lands.
+- **Fast reveals (~680ms)** with punchy, staggered flips.
+- **Synthesized sound** (`sound.js`, Web Audio, zero assets) — key ticks,
+  pitched flip tones that rise across the row, win fanfare, error buzz.
+  On by default with a 🔊 mute toggle.
+- **Haptics** on mobile (`navigator.vibrate`) for keys, hits, wins, errors.
+- **Micro-interactions** — pulsing cursor on the active tile, key-press flash,
+  floating `+points` popups, an animated score counter.
+- **Targeted shake** — errors wobble the row, only wins/losses shake the
+  screen (no more full-page shake every turn). Respects
+  `prefers-reduced-motion`.
+
+## Score, streaks & sharing
+
+- **Score** — points per solve scale with fewer guesses, faster times, and a
+  win-streak bonus; the running total persists in `localStorage`.
+- **Endless loop** — an instant **Next word →** button keeps the run going;
+  the 🔥 streak in the HUD is your reason not to stop.
+- **📊 Statistics** — games played, win %, current & max streak, guess
+  distribution (via the 📊 button).
+- **🔗 Share** — copies the classic emoji result grid (🟩🟨⬛) plus your score.
+- **🌙 / ☀️ theme** and **📱 responsive** layout, both remembered between
   sessions.
-- **📱 Mobile-friendly** — responsive board and keyboard scale down on phones.
 
 ## Run it
 

@@ -13,12 +13,20 @@
 
   <header class="topbar">
     <div class="topbar-actions">
+      <button id="soundBtn" class="icon-btn" title="Sound" aria-label="Toggle sound">🔊</button>
       <button id="statsBtn" class="icon-btn" title="Stats" aria-label="Stats">📊</button>
       <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">🌙</button>
     </div>
     <h1 class="logo">💥 BOOMDLE 💥</h1>
     <p class="tagline">Wordle, but everything explodes.</p>
   </header>
+
+  <!-- Live HUD: score ticks up, streak pressures you to keep going. -->
+  <div class="hud">
+    <div class="hud-item"><span class="hud-label">Score</span><b id="hudScore">0</b></div>
+    <div class="hud-item"><span class="hud-label">🔥 Streak</span><b id="hudStreak">0</b></div>
+    <div class="hud-item"><span class="hud-label">Best</span><b id="hudBest">0</b></div>
+  </div>
 
   <main>
     <div id="board" class="board" aria-label="game board"></div>
@@ -27,7 +35,11 @@
 
     <div id="keyboard" class="keyboard" aria-label="keyboard"></div>
 
-    <button id="reset" class="reset-btn" hidden>💣 New Game</button>
+    <!-- End-of-round actions: instant replay keeps the loop tight. -->
+    <div id="actions" class="actions" hidden>
+      <button id="nextBtn" class="reset-btn">Next word →</button>
+      <button id="shareBtn" class="ghost-btn">🔗 Share</button>
+    </div>
   </main>
 
   <!-- Stats modal -->
@@ -52,6 +64,7 @@
   </footer>
 
   <script src="words.js"></script>
+  <script src="sound.js"></script>
   <script src="explosions.js"></script>
   <script src="script.js"></script>
 </body>
